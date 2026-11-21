@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monolith — Lua script licensing</title>
+<meta name="description" content="Host Lua scripts behind HWID-locked keys. Timed keys, bans, Discord logs and a simple dashboard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/ui.css">
+<style>
+  body { font-size: 15px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(11, 13, 18, .8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav-in { display: flex; align-items: center; gap: 28px; height: 64px; }
+  .nav-links { display: flex; gap: 22px; color: var(--text-2); font-size: 14px; }
+  .nav-links a:hover { color: var(--text); }
+  .sp { flex: 1; }
+
+  .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding: 88px 0 80px; }
+  .pill-top { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 99px; background: var(--accent-bg); color: var(--accent-2); font-size: 13px; font-weight: 600; }
+  .hero h1 { margin: 20px 0 18px; font-size: clamp(38px, 5.4vw, 60px); line-height: 1.05; letter-spacing: -.035em; font-weight: 800; }
+  .hero h1 span { background: linear-gradient(90deg, var(--accent-2), #3fb6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { margin: 0 0 30px; color: var(--text-2); font-size: 17px; line-height: 1.65; max-width: 500px; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .demo { padding: 0; overflow: hidden; }
+  .demo-bar { display: flex; align-items: center; gap: 7px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .demo-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); }
+  .demo-bar span { margin-left: 8px; color: var(--text-3); font-size: 12.5px; }
+  .demo pre.code { border: 0; border-radius: 0; background: transparent; padding: 18px 20px; white-space: pre-wrap; word-break: break-all; }
+  .checks { border-top: 1px solid var(--line); padding: 14px 20px; display: grid; gap: 9px; font-size: 13.5px; color: var(--text-2); }
+  .checks div { display: flex; align-items: center; gap: 10px; }
+  .checks b { margin-left: auto; color: var(--good); font-weight: 600; font-size: 12.5px; }
+
+  .numbers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 96px; }
+  .numbers .card { padding: 18px 20px; }
+  .numbers .v { font-size: 26px; font-weight: 700; }
+  .numbers .l { color: var(--text-3); font-size: 13px; }
+
+  section { padding-bottom: 96px; }
+  .sec-title { text-align: center; max-width: 620px; margin: 0 auto 40px; }
+  .sec-title h2 { margin: 12px 0 10px; font-size: clamp(28px, 3.6vw, 38px); letter-spacing: -.03em; font-weight: 700; }
+  .sec-title p { margin: 0; color: var(--text-2); font-size: 16px; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .feature { padding: 22px; transition: border-color .2s, transform .2s; }
+  .feature:hover { border-color: var(--line-3); transform: translateY(-2px); }
+  .icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent-2); margin-bottom: 16px; }
+  .icon svg { width: 19px; height: 19px; }
+  .feature h3 { margin: 0 0 6px; font-size: 16px; }
+  .feature p { margin: 0; color: var(--text-2); line-height: 1.6; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .step { padding: 22px; }
+  .step .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; margin-bottom: 14px; }
+  .step h3 { margin: 0 0 6px; font-size: 16px; }
+  .step p { margin: 0; color: var(--text-2); line-height: 1.6; }
+
+  .faq { max-width: 760px; margin: 0 auto; display: grid; gap: 10px; }
+  details { background: var(--s1); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 20px; }
+  summary { cursor: pointer; list-style: none; padding: 17px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--text-3); font-size: 18px; line-height: 1; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { margin: 0 0 18px; color: var(--text-2); line-height: 1.65; }
+
+  .final { text-align: center; padding: 48px 24px; border-radius: 16px;
+    background: linear-gradient(135deg, rgba(124, 92, 255, .18), rgba(63, 182, 255, .08)); border: 1px solid var(--line); }
+  .final h2 { margin: 0 0 10px; font-size: clamp(26px, 3.4vw, 36px); letter-spacing: -.03em; }
+  .final p { margin: 0 0 24px; color: var(--text-2); font-size: 16px; }
+
+  footer { border-top: 1px solid var(--line); padding: 26px 0; color: var(--text-3); font-size: 13.5px; }
+  .foot-in { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .foot-in div { display: flex; gap: 20px; }
+  .foot-in a:hover { color: var(--text); }
+
+  @media (max-width: 900px) {
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; padding: 56px 0; }
+    .numbers { grid-template-columns: repeat(2, 1fr); margin-bottom: 64px; }
+    .features, .steps { grid-template-columns: 1fr 1fr; }
+    section { padding-bottom: 64px; }
+  }
+  @media (max-width: 600px) {
+    .wrap { padding: 0 16px; }
+    .features, .steps { grid-template-columns: 1fr; }
+    .nav-in .btn.ghost { display: none; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap nav-in">
+    <a class="logo" href="/" data-logo>Monolith</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="sp"></div>
+    <a class="btn ghost" href="/key/">Manage your key</a>
+    <a class="btn primary" href="/dashboard/">Dashboard</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <span class="pill-top">◆ Lua script licensing</span>
+      <h1>Sell your scripts.<br><span>Keep them locked.</span></h1>
+      <p>Host your Lua behind keys that lock to one device. Hand out one loader, make keys in seconds, and see every run from a simple dashboard.</p>
+      <div class="cta">
+        <a class="btn primary lg" href="/dashboard/">Open dashboard</a>
+        <a class="btn lg" href="#how">How it works</a>
+      </div>
+    </div>
+    <div class="card demo">
+      <div class="demo-bar"><i></i><i></i><i></i><span>executor</span></div>
+      <pre class="code"><span class="c">-- what your buyers run</span>
+<span class="k">script_key</span> = <span class="s">"kTQwPzNhYdLmVcRxEoUaJbWsGiFtRmBa"</span>
+<span class="f">loadstring</span>(game:<span class="f">HttpGet</span>(<span class="s">"<span class="origin"></span>/v1/l/9f2c…"</span>))()</pre>
+      <div class="checks">
+        <div>Key is valid <b>✓</b></div>
+        <div>HWID matches this device <b>✓</b></div>
+        <div>6 days, 23 hours left <b>✓</b></div>
+        <div>Script delivered <b>✓</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="numbers">
+    <div class="card"><div class="v" data-stat="executions">—</div><div class="l">Total executions</div></div>
+    <div class="card"><div class="v" data-stat="keys">—</div><div class="l">Keys made</div></div>
+    <div class="card"><div class="v" data-stat="scripts">—</div><div class="l">Scripts hosted</div></div>
+    <div class="card"><div class="v" data-stat="users24">—</div><div class="l">Players today</div></div>
+  </div>
+
+  <section id="features">
+    <div class="sec-title">
+      <span class="label">Features</span>
+      <h2>Everything you need to sell a script</h2>
+      <p>All in one dashboard. Nothing extra to set up.</p>
+    </div>
+    <div class="features">
+      <div class="card feature"><div class="icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="4" y="9" width="12" height="8" rx="2"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/></svg></div>
+        <h3>HWID locking</h3><p>Each key works on one device only. Reset it from the dashboard any time.</p></div>
+      <div class="card feature"><div class="icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2"/></svg></div>
+        <h3>Timed or lifetime keys</h3><p>1 day, 30 days or forever. The timer only starts when the key is first used.</p></div>
+      <div class="card feature"><div class="icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5 15 15 5"/></svg></div>
+        <h3>Ban with a reason</h3><p>Ban a key and the player sees why. Unban in one click.</p></div>
+      <div class="card feature"><div class="icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 4.5h14v9H9l-4 3v-3H3z"/></svg></div>
+        <h3>Discord logs</h3><p>Get a Discord message for every run and every blocked attempt.</p></div>
+      <div class="card feature"><div class="icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17h14M6 14V9M10 14V5M14 14V8"/></svg></div>
+        <h3>Execution stats</h3><p>Runs per day, players, and a log of every attempt with executor and country.</p></div>
+      <div class="card feature"><div class="icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 10a6 6 0 1 1 1.8 4.3"/><path d="M4 15v-5h5"/></svg></div>
+        <h3>Buyers reset their own HWID</h3><p>A public page where buyers check time left and reset their device, with a cooldown.</p></div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="sec-title">
+      <span class="label">How it works</span>
+      <h2>Three steps</h2>
+    </div>
+    <div class="steps">
+      <div class="card step"><div class="num">1</div><h3>Add your script</h3><p>Create a script in the dashboard and paste your Lua code.</p></div>
+      <div class="card step"><div class="num">2</div><h3>Make keys</h3><p>Pick how many and how long they last. Add a note so you know who has which.</p></div>
+      <div class="card step"><div class="num">3</div><h3>Share the loader</h3><p>Buyers paste their key into the loader and run it. Wrong or expired keys get nothing.</p></div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="sec-title"><span class="label">FAQ</span><h2>Questions</h2></div>
+    <div class="faq">
+      <details open><summary>Can a key work on more than one PC?</summary>
+        <p>No. A key locks to the first device that runs it. Buyers can reset it on the key page (with a cooldown), and you can reset any key from the dashboard.</p></details>
+      <details><summary>When does a timed key start?</summary>
+        <p>On its first run. A 30-day key that sits unused for a week still gets all 30 days.</p></details>
+      <details><summary>Do buyers need a new loader when I update?</summary>
+        <p>No. Save your script in the dashboard and everyone gets the new version on their next run.</p></details>
+      <details><summary>What does a player see if their key doesn't work?</summary>
+        <p>A Roblox notification saying why: invalid, expired, banned (with your reason) or wrong device.</p></details>
+      <details><summary>Can someone still steal my script?</summary>
+        <p>Someone with a valid key who hooks the executor can capture it. No key system can fully stop that, so use an obfuscator too if your code must stay private.</p></details>
+    </div>
+  </section>
+
+  <section>
+    <div class="final">
+      <h2>Ready to lock your script?</h2>
+      <p>Add your script and make your first key in under a minute.</p>
+      <a class="btn primary lg" href="/dashboard/">Open dashboard</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <span class="logo" data-logo>Monolith</span>
+    <div><a href="#features">Features</a><a href="#faq">FAQ</a><a href="/key/">Manage key</a><a href="/dashboard/">Dashboard</a></div>
+    <span>© <span id="yr"></span> Monolith</span>
+  </div>
+</footer>
+
+<script src="/assets/ui.js"></script>
+<script>
+  $$("[data-logo]").forEach((el) => el.insertAdjacentHTML("afterbegin", LOGO));
+  $("#yr").textContent = new Date().getFullYear();
+  $$(".origin").forEach((el) => el.textContent = location.origin);
+  fetch("/v1/stats").then((r) => r.json()).then((s) => {
+    $$("[data-stat]").forEach((el) => el.textContent = fmtNum(s[el.dataset.stat]));
+  }).catch(() => {});
+</script>
+</body>
+</html>

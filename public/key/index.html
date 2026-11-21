@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manage your key — Monolith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/ui.css">
+<style>
+  header { display: flex; justify-content: space-between; align-items: center; height: 64px; padding: 0 24px; border-bottom: 1px solid var(--line); }
+  main { display: grid; justify-items: center; padding: 64px 16px; }
+  .box { width: 100%; max-width: 520px; }
+  h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -.03em; }
+  .intro { margin: 0 0 24px; color: var(--text-2); font-size: 15px; line-height: 1.6; }
+  form { display: flex; gap: 8px; }
+  form .input { height: 44px; font-family: var(--mono); font-size: 13px; }
+  .err { color: var(--red); font-size: 13.5px; margin-top: 10px; min-height: 18px; }
+  .result { margin-top: 18px; padding: 0; overflow: hidden; }
+  .r-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+  .r-head h2 { margin: 2px 0 0; font-size: 18px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 20px; }
+  .grid > div { background: var(--s2); border-radius: 9px; padding: 11px 13px; }
+  .grid .v { margin-top: 3px; font-weight: 600; }
+  .ban { margin: 0 20px 14px; color: var(--red); font-size: 13.5px; }
+  .r-foot { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 20px; border-top: 1px solid var(--line); }
+  .r-foot p { margin: 0; color: var(--text-2); font-size: 13.5px; }
+  @media (max-width: 500px) { form { flex-direction: column; } .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/" data-logo>Monolith</a>
+  <a class="btn ghost" href="/">Home</a>
+</header>
+<main>
+  <div class="box">
+    <h1>Manage your key</h1>
+    <p class="intro">Paste your key to see how much time it has left. Got a new PC? Reset your HWID and the key will work on whichever device runs it next.</p>
+    <form id="f">
+      <input class="input" id="k" placeholder="Paste your key here" autocomplete="off" spellcheck="false" required>
+      <button class="btn primary lg">Check key</button>
+    </form>
+    <div class="err" id="err"></div>
+    <div id="out"></div>
+  </div>
+</main>
+
+<script src="/assets/ui.js"></script>
+<script>
+  $$("[data-logo]").forEach((el) => el.insertAdjacentHTML("afterbegin", LOGO));
+  const STATUS = { active: ["Active", "on"], unused: ["Not used yet", "new"], expired: ["Expired", "warn"], banned: ["Banned", "bad"] };
+
+  async function post(path, key) {
+    const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "Something went wrong");
+    return d;
+  }
+
+  function render(i) {
+    const [st, cls] = STATUS[i.status];
+    const time = i.days === null ? "Lifetime" : i.expires_at ? (i.status === "expired" ? "Expired" : left(i.expires_at)) : `${i.days} days (starts on first use)`;
+    const canReset = i.hwid_set && !i.next_reset_at && i.status !== "banned";
+    $("#out").innerHTML = `
+      <div class="card result">
+        <div class="r-head"><div><span class="label">Script</span><h2>${esc(i.script)}</h2></div><span class="tag ${cls}">${st}</span></div>
+        <div class="grid">
+          <div><span class="label">Time left</span><div class="v">${esc(time)}</div></div>
+          <div><span class="label">Device</span><div class="v">${i.hwid_set ? "Locked" : "Not locked yet"}</div></div>
+          <div><span class="label">Runs</span><div class="v">${fmtNum(i.uses)}</div></div>
+          <div><span class="label">Last run</span><div class="v">${ago(i.last_used_at)}</div></div>
+        </div>
+        ${i.status === "banned" && i.ban_reason ? `<div class="ban">Reason: ${esc(i.ban_reason)}</div>` : ""}
+        <div class="r-foot">
+          <p>${i.next_reset_at ? `You can reset again in <b style="color:var(--text)">${left(i.next_reset_at)}</b>.`
+            : !i.hwid_set ? "Nothing to reset yet." : i.cooldown_hours ? `You can reset once every ${i.cooldown_hours}h.` : "Reset whenever you switch devices."}</p>
+          <button class="btn ${canReset ? "primary" : ""}" id="reset" ${canReset ? "" : "disabled"}>Reset HWID</button>
+        </div>
+      </div>`;
+    $("#reset").onclick = async () => {
+      $("#err").textContent = "";
+      try { render(await post("/v1/key/reset", $("#k").value.trim())); toast("HWID reset. Run the script on your new device."); }
+      catch (e) { $("#err").textContent = e.message; }
+    };
+  }
+
+  $("#f").onsubmit = async (e) => {
+    e.preventDefault(); $("#err").textContent = ""; $("#out").innerHTML = "";
+    try { render(await post("/v1/key/info", $("#k").value.trim())); }
+    catch (er) { $("#err").textContent = er.message; }
+  };
+</script>
+</body>
+</html>

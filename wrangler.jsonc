@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "auth-panel",
+  "main": "src/index.js",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": true,
+
+  // The admin panel (HTML/CSS/JS) lives in ./public
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/v1/*"]
+  },
+
+  // All scripts and keys are stored in one SQLite-backed Durable Object.
+  // No database needs to be created by hand; it works on the free plan.
+  "durable_objects": {
+    "bindings": [{ "name": "STORE", "class_name": "Store" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }],
+
+  "observability": { "enabled": true }
+
+  // ADMIN_KEY is a secret: set it in the Cloudflare dashboard
+  // (Worker -> Settings -> Variables and Secrets), or in .dev.vars for local testing.
+}

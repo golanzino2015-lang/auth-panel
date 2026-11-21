@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — Monolith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/ui.css">
+<style>
+  html, body { height: 100%; }
+
+  /* ---------- login ---------- */
+  #login { min-height: 100%; display: grid; place-items: center; padding: 16px; }
+  .login-card { width: 100%; max-width: 380px; padding: 28px; border-radius: 16px; }
+  .login-card p { color: var(--text-2); margin: 8px 0 20px; }
+  .check { display: flex; gap: 8px; align-items: center; margin: 12px 0 16px; color: var(--text-2); font-size: 13px; cursor: pointer; }
+  .check input { accent-color: var(--accent); margin: 0; }
+  .login-err { color: var(--red); font-size: 13px; margin-top: 10px; min-height: 18px; }
+  .note {
+    background: rgba(245, 184, 74, .08); border: 1px solid rgba(245, 184, 74, .3);
+    border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--text-2);
+  }
+  .note b, .note code { color: var(--text); }
+
+  /* ---------- layout ---------- */
+  #app { display: grid; grid-template-columns: 260px 1fr; min-height: 100%; }
+  aside {
+    background: var(--s1); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 6px; padding: 18px 14px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  aside .logo { padding: 0 4px 12px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 9px;
+    border: 1px solid transparent; background: none; cursor: pointer; text-align: left; color: var(--text-2);
+  }
+  .nav-item:hover { background: var(--s2); color: var(--text); }
+  .nav-item.active { background: var(--s2); border-color: var(--line); color: var(--text); }
+  .nav-item svg { width: 16px; height: 16px; flex: none; }
+  .nav-item .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-item .ct { color: var(--text-3); font-size: 12px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); flex: none; }
+  .dot.off { background: var(--text-3); }
+  .side-title { padding: 14px 10px 4px; }
+  #scriptNav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; flex: 1; }
+  .side-foot { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 2px; }
+
+  main { padding: 28px 32px 60px; min-width: 0; max-width: 1200px; }
+  .menu-btn { display: none; margin-bottom: 16px; }
+
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  .head h1 { margin: 0; font-size: 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .head .sub { margin-top: 6px; color: var(--text-3); font-size: 12.5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent-2); cursor: pointer; font-size: inherit; }
+  .link:hover { text-decoration: underline; }
+
+  .stats { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 12px; margin-bottom: 22px; }
+  .stat { background: var(--s1); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .stat .v { font-size: 22px; font-weight: 700; }
+  .stat .l { color: var(--text-3); font-size: 12px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; overflow-x: auto; }
+  .tab {
+    padding: 10px 16px; border: 0; background: none; cursor: pointer; color: var(--text-3); font-weight: 500;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap;
+  }
+  .tab:hover { color: var(--text-2); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab .n { margin-left: 6px; font-size: 11.5px; padding: 1px 7px; border-radius: 99px; background: var(--s2); color: var(--text-3); }
+
+  .card { margin-bottom: 16px; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .card-head h3 { margin: 0; font-size: 15px; }
+  .card-head p { margin: 4px 0 0; color: var(--text-2); font-size: 13px; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .row > .f { flex: 1; min-width: 130px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .toolbar .sp { flex: 1; }
+  .seg { display: inline-flex; background: var(--s1); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
+  .seg button { border: 0; background: none; padding: 5px 11px; border-radius: 7px; color: var(--text-3); cursor: pointer; font-size: 12.5px; font-weight: 500; }
+  .seg button.active { background: var(--s3); color: var(--text); }
+
+  tr.click { cursor: pointer; }
+  .empty { text-align: center; color: var(--text-2); padding: 48px 20px; border: 1px dashed var(--line-2); border-radius: var(--radius); }
+  .empty h3 { margin: 0 0 6px; color: var(--text); font-size: 16px; }
+  .empty p { margin: 0; }
+
+  /* editor */
+  .editor-wrap { display: grid; grid-template-columns: auto 1fr; border: 1px solid var(--line); border-radius: 10px; background: #0a0c11; overflow: hidden; }
+  .gutter { padding: 14px 10px 14px 14px; font: 12.5px/1.6 var(--mono); color: #3c4254; text-align: right; user-select: none; border-right: 1px solid var(--line); overflow: hidden; white-space: pre; }
+  textarea.editor {
+    width: 100%; min-height: 460px; resize: vertical; tab-size: 4; border: 0; outline: none; background: none;
+    padding: 14px 16px; font: 12.5px/1.6 var(--mono); color: #e1e4ec; white-space: pre; overflow-x: auto;
+  }
+  .save-state { font-size: 12.5px; color: var(--text-3); }
+  .save-state.dirty { color: var(--warn); }
+
+  /* chart */
+  .chart-svg { width: 100%; height: 190px; display: block; }
+  .axis { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11.5px; color: var(--text-3); }
+  .legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--text-2); }
+  .legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; background: var(--accent-2); vertical-align: middle; margin-right: 6px; }
+  .legend i.d { background: var(--red); opacity: .7; }
+
+  /* settings */
+  .set { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 16px 0; border-top: 1px solid var(--line); }
+  .set:first-child { border-top: 0; padding-top: 0; }
+  .set:last-child { padding-bottom: 0; }
+  .set h4 { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+  .set p { margin: 0; color: var(--text-2); font-size: 13px; max-width: 540px; }
+  .set .ctl { display: flex; gap: 8px; align-items: center; flex: none; }
+
+  /* key details */
+  .kd-key { font: 13px var(--mono); padding: 11px 13px; background: #0a0c11; border: 1px solid var(--line); border-radius: 9px; word-break: break-all; margin-bottom: 14px; }
+  .kd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .kd-grid > div { background: var(--s2); border-radius: 9px; padding: 10px 12px; }
+  .kd-grid .v { margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kd-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  @media (max-width: 1000px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 820px) {
+    #app { grid-template-columns: 1fr; }
+    aside { position: fixed; z-index: 30; left: 0; top: 0; width: 270px; transform: translateX(-100%); transition: transform .2s; }
+    aside.open { transform: none; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .55); }
+    main { padding: 18px 16px 48px; }
+    .menu-btn { display: inline-flex; }
+    .set { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<section id="login" class="hidden">
+  <form class="card login-card" id="loginForm">
+    <span class="logo" data-logo>Monolith</span>
+    <p>Enter your admin key to manage your scripts and keys.</p>
+    <label class="field" for="adminKey">Admin key</label>
+    <input class="input" id="adminKey" type="password" autocomplete="current-password" required>
+    <label class="check"><input type="checkbox" id="remember" checked> Keep me logged in on this device</label>
+    <button class="btn primary" style="width:100%">Log in</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="note hidden" id="setupBox">
+      <b>First-time setup:</b> the server has no admin key yet. In Cloudflare open your Worker →
+      <b>Settings → Variables and Secrets → Add</b>, choose <b>Secret</b>, name it <code>ADMIN_KEY</code>
+      and set it to a long password. Then log in here with it.
+    </div>
+  </form>
+</section>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hidden">
+  <aside id="side">
+    <a class="logo" href="/" data-logo>Monolith</a>
+    <button class="btn primary" id="newScriptBtn" style="margin-bottom:8px">+ New script</button>
+    <button class="nav-item" data-go="overview">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
+      <span class="nm">Overview</span></button>
+    <button class="nav-item" data-go="logs">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3.5h12M2 8h12M2 12.5h8"/></svg>
+      <span class="nm">Execution logs</span></button>
+    <div class="label side-title">Your scripts</div>
+    <div id="scriptNav"></div>
+    <div class="side-foot">
+      <a class="nav-item" href="/key/" target="_blank">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="5" cy="8" r="3"/><path d="M8 8h6.5M12 8v3"/></svg>
+        <span class="nm">Buyer key page</span></a>
+      <button class="nav-item" id="logoutBtn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 2.5H2.5v11H6M10 5l3 3-3 3M13 8H6"/></svg>
+        <span class="nm">Log out</span></button>
+    </div>
+  </aside>
+
+  <main>
+    <button class="btn menu-btn" id="menuBtn">☰ Menu</button>
+    <div id="view"></div>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+
+<script src="/assets/ui.js"></script>
+<script>
+$$("[data-logo]").forEach((el) => el.insertAdjacentHTML("afterbegin", LOGO));
+
+const S = {
+  token: "", scripts: [], route: { page: "overview" },
+  script: null, keys: [], tab: "script", keyFilter: "", keyStatus: "all", logFailed: false, logScript: "",
+};
+
+const store = {
+  get(k) { try { return localStorage.getItem(k) || sessionStorage.getItem(k) || ""; } catch { return ""; } },
+  set(k, v, persist = true) { try { (persist ? localStorage : sessionStorage).setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch {} },
+};
+
+async function api(path, opts = {}) {
+  const r = await fetch("/api" + path, {
+    method: opts.method || "GET",
+    headers: { Authorization: "Bearer " + S.token, "Content-Type": "application/json" },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401 && !opts.quiet) { logout(); throw new Error("Logged out"); }
+  if (!r.ok) throw Object.assign(new Error(d.error || "Request failed"), { data: d });
+  return d;
+}
+
+/* ---------------- login ---------------- */
+$("#loginForm").onsubmit = async (e) => {
+  e.preventDefault();
+  $("#loginErr").textContent = ""; $("#setupBox").classList.add("hidden");
+  S.token = $("#adminKey").value.trim();
+  try {
+    await api("/me", { quiet: true });
+    store.set("adminKey", S.token, $("#remember").checked);
+    boot();
+  } catch (err) {
+    if (err.data && err.data.setup) $("#setupBox").classList.remove("hidden");
+    else $("#loginErr").textContent = err.message;
+  }
+};
+function logout() {
+  store.del("adminKey"); S.token = "";
+  $("#app").classList.add("hidden"); $("#login").classList.remove("hidden");
+}
+$("#logoutBtn").onclick = logout;
+$("#menuBtn").onclick = () => $("#side").classList.toggle("open");
+$$("[data-go]").forEach((b) => b.onclick = () => go({ page: b.dataset.go }));
+$("#newScriptBtn").onclick = newScript;
+
+async function boot() {
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  await loadScripts();
+  const h = location.hash.slice(1);
+  if (h.startsWith("s/")) go({ page: "script", id: h.slice(2) });
+  else go({ page: h === "logs" ? "logs" : "overview" });
+}
+
+/* ---------------- routing ---------------- */
+function go(route) {
+  S.route = route;
+  $("#side").classList.remove("open");
+  history.replaceState(null, "", route.page === "script" ? "#s/" + route.id : "#" + route.page);
+  $$("[data-go]").forEach((b) => b.classList.toggle("active", b.dataset.go === route.page));
+  renderNav();
+  ({ overview: pageOverview, logs: pageLogs, script: pageScript })[route.page]();
+}
+function openScript(id) { S.tab = "script"; go({ page: "script", id }); }
+
+async function loadScripts() { S.scripts = await api("/scripts"); renderNav(); }
+function renderNav() {
+  const cur = S.route.page === "script" ? S.route.id : null;
+  $("#scriptNav").innerHTML = S.scripts.length ? S.scripts.map((s) => `
+    <button class="nav-item ${s.id === cur ? "active" : ""}" data-sid="${s.id}">
+      <span class="dot ${s.enabled ? "" : "off"}"></span><span class="nm">${esc(s.name)}</span>
+      <span class="ct">${s.ffa ? "Free" : s.key_count + " keys"}</span>
+    </button>`).join("") : `<div class="muted" style="font-size:13px;padding:6px 10px">No scripts yet</div>`;
+  $$("[data-sid]").forEach((b) => b.onclick = () => openScript(b.dataset.sid));
+}
+
+function newScript() {
+  modal({
+    title: "New script", sub: "Give it a name. You'll get a loader and a place to paste your code right after.",
+    body: `<label class="field">Name</label><input class="input" id="mName" maxlength="80" placeholder="e.g. Arsenal Hub">`,
+    ok: "Create",
+    onOk: async () => {
+      const s = await api("/scripts", { method: "POST", body: { name: $("#mName").value.trim() } });
+      await loadScripts(); openScript(s.id);
+    },
+  });
+}
+
+/* ================= OVERVIEW ================= */
+async function pageOverview() {
+  const [o, logs] = await Promise.all([api("/overview"), api("/logs?limit=8")]);
+  $("#view").innerHTML = `
+    <div class="head"><div><h1>Overview</h1><div class="sub">Everything across all your scripts</div></div></div>
+    <div class="stats" style="--n:4">
+      <div class="stat"><div class="v">${fmtNum(o.executions)}</div><div class="l">Total executions</div></div>
+      <div class="stat"><div class="v">${fmtNum(o.last24)}</div><div class="l">Executions (24h)</div></div>
+      <div class="stat"><div class="v">${fmtNum(o.users24)}</div><div class="l">Players (24h)</div></div>
+      <div class="stat"><div class="v">${fmtNum(o.keys.active)}</div><div class="l">Active keys · ${fmtNum(o.keys.total)} total</div></div>
+    </div>
+
+    <div class="card-head"><h3>Your scripts</h3></div>
+    ${S.scripts.length ? `<div class="table-wrap" style="margin-bottom:22px"><table>
+      <thead><tr><th>Name</th><th>Status</th><th>Keys</th><th>Executions</th><th>Version</th><th>Updated</th><th></th></tr></thead>
+      <tbody>${S.scripts.map((s) => `<tr class="click" data-open="${s.id}">
+        <td class="strong">${esc(s.name)}</td>
+        <td>${s.enabled ? '<span class="tag on">Online</span>' : '<span class="tag off">Disabled</span>'} ${s.ffa ? '<span class="tag new">Free for all</span>' : ""}</td>
+        <td>${fmtNum(s.key_count)}</td><td>${fmtNum(s.executions)}</td><td>v${s.version}</td><td>${ago(s.updated_at)}</td>
+        <td style="text-align:right"><span class="btn sm">Open →</span></td>
+      </tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty" style="margin-bottom:22px"><h3>No scripts yet</h3><p>Create one to get a loader and start making keys.</p>
+         <button class="btn primary" style="margin-top:14px" onclick="newScript()">+ New script</button></div>`}
+
+    <div class="card">
+      <div class="card-head"><h3>Executions · last 14 days</h3>
+        <div class="legend"><span><i></i>Worked</span><span><i class="d"></i>Blocked</span></div></div>
+      <svg class="chart-svg" id="chart"></svg><div class="axis" id="axis"></div>
+    </div>
+
+    <div class="card-head" style="margin-top:22px"><h3>Recent activity</h3><button class="btn sm" id="allLogs">All logs →</button></div>
+    ${logTable(logs, true)}`;
+  drawChart($("#chart"), o.series, { height: 190 }); chartAxis($("#axis"), o.series);
+  $("#allLogs").onclick = () => go({ page: "logs" });
+  $$("[data-open]").forEach((r) => r.onclick = () => openScript(r.dataset.open));
+}
+
+function logTable(rows, showScript) {
+  if (!rows.length) return `<div class="empty"><h3>No executions yet</h3><p>Runs show up here as soon as someone uses your loader.</p></div>`;
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>When</th><th>Result</th>${showScript ? "<th>Script</th>" : ""}<th>Key</th><th>Note</th><th>Executor</th><th>Country</th><th>Reason</th></tr></thead>
+    <tbody>${rows.map((l) => `<tr>
+      <td title="${new Date(l.created_at).toLocaleString()}">${ago(l.created_at)}</td>
+      <td>${l.ok ? '<span class="tag on">Worked</span>' : '<span class="tag bad">Blocked</span>'}</td>
+      ${showScript ? `<td class="strong">${esc(l.script_name || "deleted")}</td>` : ""}
+      <td class="key">${l.key ? esc(l.key.slice(0, 12)) + "…" : '<span class="muted">—</span>'}</td>
+      <td>${esc(l.key_note || "") || '<span class="muted">—</span>'}</td>
+      <td>${esc(l.executor) || '<span class="muted">Unknown</span>'}</td>
+      <td>${esc(l.country) || "—"}</td>
+      <td>${esc(l.reason) || '<span class="muted">—</span>'}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+}
+
+/* ================= LOGS ================= */
+async function pageLogs() {
+  const logs = await api(`/logs?limit=300${S.logScript ? "&script=" + S.logScript : ""}${S.logFailed ? "&failed=1" : ""}`);
+  $("#view").innerHTML = `
+    <div class="head"><div><h1>Execution logs</h1><div class="sub">Last 300 attempts · kept for 30 days</div></div></div>
+    <div class="toolbar">
+      <select class="select" id="lgScript" style="width:auto;min-width:200px">
+        <option value="">All scripts</option>
+        ${S.scripts.map((s) => `<option value="${s.id}" ${S.logScript === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
+      </select>
+      <div class="seg"><button data-f="0" class="${S.logFailed ? "" : "active"}">All</button><button data-f="1" class="${S.logFailed ? "active" : ""}">Blocked only</button></div>
+      <div class="sp"></div><button class="btn sm" id="lgRefresh">Refresh</button>
+    </div>
+    ${logTable(logs, true)}`;
+  $("#lgScript").onchange = (e) => { S.logScript = e.target.value; pageLogs(); };
+  $$("[data-f]").forEach((b) => b.onclick = () => { S.logFailed = b.dataset.f === "1"; pageLogs(); });
+  $("#lgRefresh").onclick = pageLogs;
+}
+
+/* ================= SCRIPT PAGE ================= */
+async function pageScript() {
+  try {
+    [S.script, S.keys] = await Promise.all([api("/scripts/" + S.route.id), api(`/scripts/${S.route.id}/keys`)]);
+  } catch { return go({ page: "overview" }); }
+  renderScript();
+}
+async function refreshScript() {
+  [S.script, S.keys] = await Promise.all([api("/scripts/" + S.script.id), api(`/scripts/${S.script.id}/keys`)]);
+  await loadScripts(); renderScript();
+}
+
+function loader(key = "YOUR_KEY", genv = false) {
+  return `${genv ? "getgenv()." : ""}script_key = "${key}"\nloadstring(game:HttpGet("${location.origin}/v1/l/${S.script.id}"))()`;
+}
+function hl(code) {
+  return esc(code)
+    .replace(/(&quot;[^&]*?&quot;)/g, '<span class="s">$1</span>')
+    .replace(/\b(loadstring|HttpGet|getgenv)\b/g, '<span class="f">$1</span>')
+    .replace(/^(script_key)/m, '<span class="k">$1</span>');
+}
+function keyState(k) {
+  if (k.banned) return "banned";
+  if (k.expires_at && Date.now() > k.expires_at) return "expired";
+  if (!k.last_used_at) return "unused";
+  return "active";
+}
+const KTAG = { active: '<span class="tag on">Active</span>', unused: '<span class="tag new">Unused</span>',
+  expired: '<span class="tag warn">Expired</span>', banned: '<span class="tag bad">Banned</span>' };
+function expiryText(k) {
+  if (k.days === null) return "Lifetime";
+  if (!k.expires_at) return `${k.days}d (starts on first use)`;
+  return Date.now() > k.expires_at ? "Expired" : left(k.expires_at) + " left";
+}
+
+function renderScript() {
+  const s = S.script;
+  const counts = { active: 0, unused: 0, expired: 0, banned: 0 };
+  S.keys.forEach((k) => counts[keyState(k)]++);
+  $("#view").innerHTML = `
+    <div class="head">
+      <div>
+        <h1>${esc(s.name)} ${s.enabled ? '<span class="tag on">Online</span>' : '<span class="tag off">Disabled</span>'}
+          ${s.ffa ? '<span class="tag new">Free for all</span>' : ""}</h1>
+        <div class="sub">Version ${s.version} · updated ${ago(s.updated_at)} · ID <span class="mono">${s.id}</span> <button class="link" id="cpId">copy</button></div>
+      </div>
+    </div>
+    <div class="stats" style="--n:4">
+      <div class="stat"><div class="v">${fmtNum(S.keys.length)}</div><div class="l">Keys</div></div>
+      <div class="stat"><div class="v">${fmtNum(counts.active)}</div><div class="l">Active keys</div></div>
+      <div class="stat"><div class="v">${fmtNum(counts.banned)}</div><div class="l">Banned keys</div></div>
+      <div class="stat"><div class="v">${fmtNum(s.executions)}</div><div class="l">Executions</div></div>
+    </div>
+    <div class="tabs">
+      ${[["script", "Loader & Script"], ["keys", "Keys", S.keys.length], ["logs", "Logs"], ["settings", "Settings"]]
+        .map(([t, n, c]) => `<button class="tab ${S.tab === t ? "active" : ""}" data-tab="${t}">${n}${c !== undefined ? `<span class="n">${c}</span>` : ""}</button>`).join("")}
+    </div>
+    <div id="tabBody"></div>`;
+  $("#cpId").onclick = () => copy(s.id, "Script ID copied");
+  $$("[data-tab]").forEach((b) => b.onclick = () => { S.tab = b.dataset.tab; renderScript(); });
+  ({ script: tabScript, keys: tabKeys, logs: tabLogs, settings: tabSettings })[S.tab]();
+}
+
+/* ---------- Loader & Script ---------- */
+function tabScript() {
+  const s = S.script;
+  $("#tabBody").innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Loader</h3><p>Give this to your buyers. They put their key where it says <code>YOUR_KEY</code>.</p></div>
+        <div class="btns"><button class="btn primary" id="cpL">Copy loader</button><button class="btn" id="cpG">Copy getgenv version</button></div>
+      </div>
+      <pre class="code">${hl(loader())}</pre>
+      <p class="muted" style="margin:10px 0 0;font-size:13px">Protected by two walls: the loader is obfuscated and checks for hooked executors, the key is verified, then your script is delivered once through a one-time link and arrives encrypted for that single run. Opening any of these links in a browser shows nothing.</p>
+      ${s.ffa ? `<p class="muted" style="margin:8px 0 0;font-size:13px">Free for all is on, so the key line isn't needed right now.</p>` : ""}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Script</h3><p>Paste your Lua here and press Save. Everyone gets the new version on their next run.</p></div>
+        <div class="btns">
+          <span class="save-state" id="edState">Saved</span>
+          <label class="btn">Upload file<input type="file" id="edFile" accept=".lua,.luau,.txt" hidden></label>
+          <button class="btn primary" id="edSave">Save</button>
+        </div>
+      </div>
+      <div class="editor-wrap"><div class="gutter" id="gutter"></div>
+        <textarea class="editor" id="ed" spellcheck="false" placeholder="-- paste your Lua script here">${esc(s.source)}</textarea></div>
+    </div>`;
+  $("#cpL").onclick = () => copy(loader(), "Loader copied");
+  $("#cpG").onclick = () => copy(loader("YOUR_KEY", true), "Loader copied");
+
+  const ta = $("#ed"), g = $("#gutter");
+  const lines = () => { g.textContent = Array.from({ length: ta.value.split("\n").length }, (_, i) => i + 1).join("\n"); g.scrollTop = ta.scrollTop; };
+  const mark = () => {
+    const dirty = ta.value !== S.script.source;
+    $("#edState").textContent = dirty ? "Unsaved changes" : "Saved";
+    $("#edState").classList.toggle("dirty", dirty);
+  };
+  lines();
+  ta.oninput = () => { lines(); mark(); };
+  ta.onscroll = () => g.scrollTop = ta.scrollTop;
+  ta.onkeydown = (e) => {
+    if (e.key === "Tab") { e.preventDefault(); ta.setRangeText("\t", ta.selectionStart, ta.selectionEnd, "end"); ta.oninput(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
+  };
+  async function save() {
+    const pos = ta.selectionStart;
+    S.script = await api("/scripts/" + S.script.id, { method: "PUT", body: { source: ta.value } });
+    await loadScripts(); renderScript(); toast(`Saved (version ${S.script.version})`);
+    const t = $("#ed"); if (t) { t.focus(); t.setSelectionRange(pos, pos); }
+  }
+  $("#edSave").onclick = save;
+  $("#edFile").onchange = async (e) => { const f = e.target.files[0]; if (f) { ta.value = await f.text(); ta.oninput(); toast("File loaded. Press Save to publish it."); } };
+}
+
+/* ---------- Keys ---------- */
+function tabKeys() {
+  const f = S.keyFilter.toLowerCase();
+  const rows = S.keys.filter((k) =>
+    (S.keyStatus === "all" || keyState(k) === S.keyStatus) &&
+    (!f || k.key.toLowerCase().includes(f) || k.note.toLowerCase().includes(f) || k.discord_id.includes(f)));
+  $("#tabBody").innerHTML = `
+    ${S.script.ffa ? `<div class="note" style="margin-bottom:16px">Free for all is on, so keys aren't being checked. Turn it off in <b>Settings</b> to require keys again.</div>` : ""}
+    <div class="card">
+      <div class="card-head"><div><h3>Make keys</h3><p>Timed keys start counting down the first time they're used.</p></div></div>
+      <div class="row">
+        <div class="f" style="max-width:100px"><label class="field">How many</label><input class="input" id="gCount" type="number" min="1" max="500" value="1"></div>
+        <div class="f" style="max-width:170px"><label class="field">Length</label>
+          <select class="select" id="gDur">
+            <option value="">Lifetime</option><option value="1">1 day</option><option value="3">3 days</option>
+            <option value="7">7 days</option><option value="14">14 days</option><option value="30" selected>30 days</option>
+            <option value="90">90 days</option><option value="365">1 year</option><option value="custom">Custom…</option>
+          </select></div>
+        <div class="f hidden" id="gCustomWrap" style="max-width:100px"><label class="field">Days</label><input class="input" id="gCustom" type="number" min="1" value="60"></div>
+        <div class="f"><label class="field">Note</label><input class="input" id="gNote" maxlength="120" placeholder="Buyer name, order ID…"></div>
+        <div class="f" style="max-width:190px"><label class="field">Discord ID (optional)</label><input class="input" id="gDiscord" maxlength="32" inputmode="numeric"></div>
+        <button class="btn primary" id="gBtn" style="height:38px">Make keys</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input class="input" id="kSearch" placeholder="Search key, note or Discord ID…" value="${esc(S.keyFilter)}" style="max-width:300px;min-width:200px">
+      <div class="seg">${["all", "active", "unused", "expired", "banned"].map((st) =>
+        `<button data-st="${st}" class="${S.keyStatus === st ? "active" : ""}">${st[0].toUpperCase() + st.slice(1)}</button>`).join("")}</div>
+      <div class="sp"></div>
+      <select class="select" id="bulk" style="width:auto">
+        <option value="">More actions…</option>
+        <option value="copy">Copy shown keys</option>
+        <option value="csv">Download shown keys (CSV)</option>
+        <option value="reset_all_hwid">Reset every HWID</option>
+        <option value="delete_expired">Delete expired keys</option>
+        <option value="delete_unused">Delete unused keys</option>
+        <option value="delete_banned">Delete banned keys</option>
+      </select>
+    </div>
+    ${rows.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Key</th><th>Status</th><th>Note</th><th>Time left</th><th>HWID</th><th>Runs</th><th>Last run</th><th></th></tr></thead>
+      <tbody>${rows.map((k) => `<tr class="click" data-k="${esc(k.key)}">
+        <td class="key">${esc(k.key)}</td>
+        <td>${KTAG[keyState(k)]}</td>
+        <td>${esc(k.note) || '<span class="muted">—</span>'}</td>
+        <td>${expiryText(k)}</td>
+        <td>${k.hwid ? "Locked" : '<span class="muted">Not set</span>'}</td>
+        <td>${fmtNum(k.uses)}</td>
+        <td>${ago(k.last_used_at)}</td>
+        <td style="text-align:right"><span class="btn sm">Manage</span></td>
+      </tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty"><h3>${S.keys.length ? "No keys match" : "No keys yet"}</h3><p>${S.keys.length ? "Try another search or filter." : "Make your first key above."}</p></div>`}`;
+
+  $("#gDur").onchange = (e) => $("#gCustomWrap").classList.toggle("hidden", e.target.value !== "custom");
+  $("#gBtn").onclick = async () => {
+    const dur = $("#gDur").value;
+    const days = dur === "custom" ? +$("#gCustom").value : dur ? +dur : null;
+    const keys = await api(`/scripts/${S.script.id}/keys`, { method: "POST", body: {
+      count: +$("#gCount").value || 1, days, note: $("#gNote").value.trim(), discord_id: $("#gDiscord").value.trim(),
+    }});
+    await refreshScript();
+    modal({
+      title: `${keys.length} key${keys.length > 1 ? "s" : ""} made`,
+      sub: days ? `${days}-day keys. The timer starts on the first run.` : "Lifetime keys.",
+      body: `<textarea class="input" readonly style="height:${Math.min(240, 44 + keys.length * 21)}px;font:12.5px/1.6 var(--mono)">${keys.join("\n")}</textarea>
+        ${keys.length === 1 ? `<button type="button" class="btn" id="mLoad" style="margin-top:10px;width:100%">Copy loader with this key filled in</button>` : ""}`,
+      ok: "Copy keys", cancel: "Close",
+      onOk: () => copy(keys.join("\n"), "Keys copied"),
+    });
+    const ml = $("#mLoad"); if (ml) ml.onclick = () => copy(loader(keys[0]), "Loader copied");
+  };
+  $("#kSearch").oninput = (e) => {
+    S.keyFilter = e.target.value; const p = e.target.selectionStart;
+    tabKeys(); const i = $("#kSearch"); i.focus(); i.setSelectionRange(p, p);
+  };
+  $$("[data-st]").forEach((b) => b.onclick = () => { S.keyStatus = b.dataset.st; tabKeys(); });
+  $("#bulk").onchange = (e) => bulk(e.target.value, rows);
+  $$("tr[data-k]").forEach((r) => r.onclick = () => keyModal(r.dataset.k));
+}
+
+function bulk(action, rows) {
+  if (!action) return;
+  if (action === "copy") { copy(rows.map((k) => k.key).join("\n"), `${rows.length} keys copied`); return tabKeys(); }
+  if (action === "csv") {
+    const head = "key,status,note,discord_id,hwid_locked,days,expires_at,runs,last_run";
+    const lines = rows.map((k) => [k.key, keyState(k), JSON.stringify(k.note), k.discord_id, k.hwid ? "yes" : "no",
+      k.days ?? "lifetime", k.expires_at ? new Date(k.expires_at).toISOString() : "", k.uses,
+      k.last_used_at ? new Date(k.last_used_at).toISOString() : ""].join(","));
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([head + "\n" + lines.join("\n")], { type: "text/csv" }));
+    a.download = `${S.script.name.replace(/[^\w-]+/g, "_")}_keys.csv`; a.click();
+    return tabKeys();
+  }
+  const text = {
+    reset_all_hwid: ["Reset every HWID?", "Every key for this script will lock to the next device that runs it."],
+    delete_expired: ["Delete expired keys?", "Expired keys will be removed for good."],
+    delete_unused: ["Delete unused keys?", "Keys that were never used will be removed for good. Anyone holding one loses it."],
+    delete_banned: ["Delete banned keys?", "Banned keys will be removed for good."],
+  }[action];
+  modal({
+    title: text[0], sub: text[1], ok: "Yes, do it", danger: action.startsWith("delete"),
+    onOk: async () => {
+      const r = await api(`/scripts/${S.script.id}/bulk`, { method: "POST", body: { action } });
+      toast(`${r.changed} key${r.changed === 1 ? "" : "s"} changed`); await refreshScript();
+    },
+  });
+  tabKeys();
+}
+
+function keyModal(key) {
+  const k = S.keys.find((x) => x.key === key); if (!k) return;
+  const patch = async (body, msg) => {
+    await api("/keys/" + encodeURIComponent(key), { method: "PATCH", body });
+    await refreshScript(); toast(msg); keyModal(key);
+  };
+  modal({
+    wide: true, title: "Manage key", ok: null, cancel: "Close",
+    body: `
+      <div class="kd-key">${esc(k.key)}</div>
+      <div class="kd-grid">
+        <div><span class="label">Status</span><div class="v">${KTAG[keyState(k)]}</div></div>
+        <div><span class="label">Time left</span><div class="v">${expiryText(k)}</div></div>
+        <div><span class="label">HWID</span><div class="v mono" title="${esc(k.hwid || "")}">${k.hwid ? esc(k.hwid) : '<span class="muted">Not set</span>'}</div></div>
+        <div><span class="label">Runs</span><div class="v">${fmtNum(k.uses)} · last ${ago(k.last_used_at)}</div></div>
+        <div><span class="label">Note</span><div class="v">${esc(k.note) || '<span class="muted">—</span>'}</div></div>
+        <div><span class="label">Discord ID</span><div class="v mono">${esc(k.discord_id) || '<span class="muted">—</span>'}</div></div>
+      </div>
+      ${k.banned && k.ban_reason ? `<div style="color:var(--red);font-size:13px;margin:-4px 0 14px">Ban reason: ${esc(k.ban_reason)}</div>` : ""}
+      <div class="kd-acts">
+        <button type="button" class="btn" data-a="copy">Copy key</button>
+        <button type="button" class="btn" data-a="load">Copy loader with key</button>
+        <button type="button" class="btn" data-a="hwid" ${k.hwid ? "" : "disabled"}>Reset HWID</button>
+        <button type="button" class="btn" data-a="edit">Edit note / Discord</button>
+        <button type="button" class="btn" data-a="time" ${k.days === null ? "disabled" : ""}>Add days</button>
+        <button type="button" class="btn" data-a="life" ${k.days === null ? "disabled" : ""}>Make lifetime</button>
+        <button type="button" class="btn ${k.banned ? "" : "danger"}" data-a="ban">${k.banned ? "Unban" : "Ban"}</button>
+        <button type="button" class="btn danger" data-a="del">Delete</button>
+      </div>`,
+  });
+  $$("[data-a]", $("#modalRoot")).forEach((b) => b.onclick = () => ({
+    copy: () => copy(k.key, "Key copied"),
+    load: () => copy(loader(k.key), "Loader copied"),
+    hwid: () => patch({ resetHwid: true }, "HWID reset"),
+    life: () => patch({ lifetime: true }, "Key is now lifetime"),
+    edit: () => modal({ title: "Edit key", body: `
+        <label class="field">Note</label><input class="input" id="mNote" maxlength="120" value="${esc(k.note)}">
+        <label class="field" style="margin-top:12px">Discord ID</label><input class="input" id="mDisc" maxlength="32" value="${esc(k.discord_id)}">`,
+      ok: "Save", onOk: () => patch({ note: $("#mNote").value.trim(), discord_id: $("#mDisc").value.trim() }, "Key updated") }),
+    time: () => modal({ title: "Add days", sub: k.expires_at ? "Added on top of the time left." : "Added before the key is first used.",
+      body: `<label class="field">Days</label><input class="input" id="mDays" type="number" min="1" value="7">`,
+      ok: "Add", onOk: () => patch({ addDays: +$("#mDays").value || 0 }, "Days added") }),
+    ban: () => k.banned ? patch({ banned: false }, "Key unbanned") : modal({ title: "Ban key", danger: true,
+      sub: "The player sees this reason when the script won't load.",
+      body: `<label class="field">Reason (optional)</label><input class="input" id="mReason" maxlength="120" placeholder="e.g. Key sharing">`,
+      ok: "Ban", onOk: () => patch({ banned: true, ban_reason: $("#mReason").value.trim() }, "Key banned") }),
+    del: () => modal({ title: "Delete this key?", danger: true, sub: "Whoever has it loses access. This can't be undone.",
+      ok: "Delete", onOk: async () => { await api("/keys/" + encodeURIComponent(key), { method: "DELETE" }); await refreshScript(); toast("Key deleted"); } }),
+  })[b.dataset.a]());
+}
+
+/* ---------- Logs ---------- */
+async function tabLogs() {
+  $("#tabBody").innerHTML = `<div class="muted">Loading…</div>`;
+  const [o, logs] = await Promise.all([api("/overview?script=" + S.script.id), api(`/logs?limit=50&script=${S.script.id}`)]);
+  if (S.tab !== "logs") return;
+  $("#tabBody").innerHTML = `
+    <div class="card">
+      <div class="card-head"><div><h3>Executions · last 14 days</h3>
+        <p>${fmtNum(o.last24)} runs and ${fmtNum(o.users24)} players in the last 24 hours</p></div>
+        <div class="legend"><span><i></i>Worked</span><span><i class="d"></i>Blocked</span></div></div>
+      <svg class="chart-svg" id="chart"></svg><div class="axis" id="axis"></div>
+    </div>
+    <div class="card-head" style="margin-top:22px"><h3>Last 50 runs</h3><button class="btn sm" id="clearLogs">Clear logs</button></div>
+    ${logTable(logs, false)}`;
+  drawChart($("#chart"), o.series, { height: 190 }); chartAxis($("#axis"), o.series);
+  $("#clearLogs").onclick = () => modal({ title: "Clear logs?", sub: "Removes this script's run history. The execution total stays.", ok: "Clear", danger: true,
+    onOk: async () => { await api(`/scripts/${S.script.id}/bulk`, { method: "POST", body: { action: "clear_logs" } }); tabLogs(); } });
+}
+
+/* ---------- Settings ---------- */
+function tabSettings() {
+  const s = S.script;
+  const put = async (body, msg) => {
+    S.script = await api("/scripts/" + s.id, { method: "PUT", body });
+    await loadScripts(); toast(msg); renderScript();
+  };
+  $("#tabBody").innerHTML = `
+    <div class="card">
+      <div class="set"><div><h4>Name</h4><p>Shown in your dashboard, on the buyer key page and in Discord logs.</p></div>
+        <div class="ctl"><input class="input" id="stName" value="${esc(s.name)}" maxlength="80" style="width:220px"><button class="btn" id="stNameSave">Save</button></div></div>
+      <div class="set"><div><h4>Script online</h4><p>Turn off to stop the script loading for everyone.</p></div>
+        <div class="ctl"><label class="switch"><input type="checkbox" id="stEnabled" ${s.enabled ? "checked" : ""}><span></span></label></div></div>
+      <div class="set"><div><h4>Free for all</h4><p>Anyone with the loader can run it without a key. Runs are still logged.</p></div>
+        <div class="ctl"><label class="switch"><input type="checkbox" id="stFfa" ${s.ffa ? "checked" : ""}><span></span></label></div></div>
+      <div class="set"><div><h4>HWID lock</h4><p>Each key only works on the first device that uses it.</p></div>
+        <div class="ctl"><label class="switch"><input type="checkbox" id="stHwid" ${s.hwid_lock ? "checked" : ""}><span></span></label></div></div>
+      <div class="set"><div><h4>Block tampered executors</h4><p>Refuse to deliver the script if the loader detects hooked core functions (a common dumping trick). Turn off only if real buyers get wrongly blocked.</p></div>
+        <div class="ctl"><label class="switch"><input type="checkbox" id="stTamper" ${s.block_tamper ? "checked" : ""}><span></span></label></div></div>
+      <div class="set"><div><h4>Obfuscate script</h4><p>Encrypt every string and number, minify, and wrap the code in stacked self-decrypting layers before delivery. ${!s.obfuscate ? "Currently off." : !s.obf_ok ? '<span style="color:var(--red)">Last build failed — delivering plain source. Re-save to retry.</span>' : s.has_obf ? '<span style="color:var(--good)">Active on the delivered script.</span>' : "Will apply the next time you save the script."} For fully unreadable source, also run it through a dedicated obfuscator before uploading.</p></div>
+        <div class="ctl"><label class="switch"><input type="checkbox" id="stObf" ${s.obfuscate ? "checked" : ""}><span></span></label></div></div>
+      <div class="set"><div><h4>Buyer HWID reset cooldown</h4><p>How long buyers wait between resets on the key page. 0 = no limit.</p></div>
+        <div class="ctl"><input class="input" id="stCd" type="number" min="0" max="8760" value="${s.reset_cooldown}" style="width:80px"><span class="muted">hours</span><button class="btn" id="stCdSave">Save</button></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h3>Discord logs</h3><p>Paste a webhook URL to get a message for every run and blocked attempt.<br>
+        In Discord: Server Settings → Integrations → Webhooks → New Webhook → Copy URL.</p></div></div>
+      <div class="row"><div class="f"><input class="input" id="stHook" value="${esc(s.webhook)}" placeholder="https://discord.com/api/webhooks/…"></div>
+        <button class="btn primary" id="stHookSave" style="height:38px">Save</button>
+        ${s.webhook ? `<button class="btn" id="stHookOff" style="height:38px">Remove</button>` : ""}</div>
+    </div>
+    <div class="card" style="border-color:rgba(255,92,122,.3)">
+      <div class="set"><div><h4>Delete script</h4><p>Deletes the script, its ${S.keys.length} keys and its logs. This can't be undone.</p></div>
+        <div class="ctl"><button class="btn danger" id="stDel">Delete script</button></div></div>
+    </div>`;
+  $("#stNameSave").onclick = () => put({ name: $("#stName").value.trim() }, "Renamed");
+  $("#stEnabled").onchange = (e) => put({ enabled: e.target.checked }, e.target.checked ? "Script is online" : "Script disabled");
+  $("#stFfa").onchange = (e) => put({ ffa: e.target.checked }, e.target.checked ? "Free for all is on" : "Keys required again");
+  $("#stHwid").onchange = (e) => put({ hwid_lock: e.target.checked }, e.target.checked ? "HWID lock on" : "HWID lock off");
+  $("#stTamper").onchange = (e) => put({ block_tamper: e.target.checked }, e.target.checked ? "Tamper block on" : "Tamper block off");
+  $("#stObf").onchange = (e) => put({ obfuscate: e.target.checked }, e.target.checked ? "Obfuscation on" : "Obfuscation off");
+  $("#stCdSave").onclick = () => put({ reset_cooldown: +$("#stCd").value || 0 }, "Cooldown saved");
+  $("#stHookSave").onclick = () => put({ webhook: $("#stHook").value.trim() }, "Webhook saved").catch((e) => toast(e.message));
+  if ($("#stHookOff")) $("#stHookOff").onclick = () => put({ webhook: "" }, "Webhook removed");
+  $("#stDel").onclick = () => modal({
+    title: "Delete script?", danger: true, sub: `"${s.name}" and all its keys will be gone for good.`,
+    body: `<label class="field">Type the script name to confirm</label><input class="input" id="mConfirm" placeholder="${esc(s.name)}">`,
+    ok: "Delete forever",
+    onOk: async () => {
+      if ($("#mConfirm").value.trim() !== s.name) throw new Error("The name doesn't match.");
+      await api("/scripts/" + s.id, { method: "DELETE" });
+      await loadScripts(); toast("Script deleted"); go({ page: "overview" });
+    },
+  });
+}
+
+/* ================= modal ================= */
+function modal({ title, sub = "", body = "", ok = "OK", cancel = "Cancel", danger = false, wide = false, onOk }) {
+  const root = $("#modalRoot");
+  root.innerHTML = `<div class="modal-bg"><form class="modal ${wide ? "wide" : ""}">
+    <h3>${esc(title)}</h3>${sub ? `<p class="sub">${esc(sub)}</p>` : ""}${body}<div class="err" id="mErr"></div>
+    <div class="actions"><button type="button" class="btn" id="mCancel">${esc(cancel)}</button>
+    ${ok ? `<button class="btn ${danger ? "danger" : "primary"}">${esc(ok)}</button>` : ""}</div></form></div>`;
+  const close = () => root.innerHTML = "";
+  $("#mCancel").onclick = close;
+  root.querySelector(".modal-bg").onmousedown = (e) => { if (e.target.classList.contains("modal-bg")) close(); };
+  root.querySelector("form").onsubmit = async (e) => {
+    e.preventDefault();
+    try { await onOk(); if (root.querySelector("form") === e.target) close(); } catch (err) { $("#mErr").textContent = err.message; }
+  };
+  const first = root.querySelector("input:not([readonly])"); if (first) first.focus();
+}
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("#modalRoot").innerHTML = ""; });
+
+/* ================= boot ================= */
+(async () => {
+  S.token = store.get("adminKey");
+  if (S.token) { try { await api("/me", { quiet: true }); return boot(); } catch {} }
+  $("#login").classList.remove("hidden");
+})();
+</script>
+</body>
+</html>
