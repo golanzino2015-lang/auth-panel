@@ -505,12 +505,19 @@ async function handlePublic(request, url, store, ctx) {
   return new Response("Not found", { status: 404 });
 }
 
-/* ---------------- admin API (needs ADMIN_KEY) ---------------- */
+/* ---------------- admin API ---------------- */
+
+// TEMPORARY TEST KEY: enter 1234 in the admin panel while testing.
+// Remove this constant and its comparison before making the panel public.
+const TEST_ADMIN_KEY = "1234";
 
 async function handleApi(request, url, store, env) {
-  if (!env.ADMIN_KEY) return json({ error: "ADMIN_KEY is not set on the server.", setup: true }, 503);
   const given = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  if (!(await safeEqual(given, env.ADMIN_KEY))) return json({ error: "Wrong admin key." }, 401);
+  const matchesConfiguredKey = !!env.ADMIN_KEY && await safeEqual(given, env.ADMIN_KEY);
+  const matchesTestKey = await safeEqual(given, TEST_ADMIN_KEY);
+  if (!matchesConfiguredKey && !matchesTestKey) {
+    return json({ error: "Wrong admin key.", setup: false }, 401);
+  }
 
   const m = request.method;
   const p = url.pathname.split("/").filter(Boolean).slice(1); // after "api"
